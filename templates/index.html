@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meterwise - Smart Utility Bill Management</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- ==================== SCREEN 1: SIGN IN ==================== -->
+    <div id="view-auth-login" class="auth-wrapper" style="display: none;">
+        <div class="auth-card">
+            <div class="auth-logo-icon">
+                <i class="fa-solid fa-bolt-lightning"></i>
+            </div>
+            <h1 class="auth-title">Sign in to Meterwise</h1>
+            <p class="auth-subtitle">Manage every utility bill in one place.</p>
+
+            <form id="form-login" class="auth-form">
+                <div>
+                    <label>Email</label>
+                    <input type="email" id="login-email" class="auth-input" value="demo@example.com" required>
+                </div>
+                <div>
+                    <label>Password</label>
+                    <input type="password" id="login-password" class="auth-input" value="Demo@123" required>
+                </div>
+                <button type="submit" class="btn-auth">Sign in</button>
+            </form>
+
+            <div class="auth-footer">
+                Don't have an account? <a href="#register" onclick="app.showAuthView('register')">Create one</a>
+            </div>
+
+            <div class="demo-credentials-box">
+                Demo login (after seeding):<br>
+                <code>demo@example.com / Demo@123</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SCREEN 2: CREATE ACCOUNT ==================== -->
+    <div id="view-auth-register" class="auth-wrapper" style="display: none;">
+        <div class="auth-card">
+            <div class="auth-logo-icon">
+                <i class="fa-solid fa-bolt-lightning"></i>
+            </div>
+            <h1 class="auth-title">Create your account</h1>
+            <p class="auth-subtitle">Start tracking electricity, water, gas and more.</p>
+
+            <form id="form-register" class="auth-form">
+                <div>
+                    <label>Full name</label>
+                    <input type="text" id="reg-fullname" class="auth-input" placeholder="Jane Doe" required>
+                </div>
+                <div>
+                    <label>Email</label>
+                    <input type="email" id="reg-email" class="auth-input" placeholder="demo@example.com" required>
+                </div>
+                <div>
+                    <label>Phone (optional)</label>
+                    <input type="tel" id="reg-phone" class="auth-input" placeholder="+91 98765 43210">
+                </div>
+                <div>
+                    <label>Password</label>
+                    <input type="password" id="reg-password" class="auth-input" placeholder="••••••••" required>
+                </div>
+                <div>
+                    <label>Confirm password</label>
+                    <input type="password" id="reg-confirm" class="auth-input" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-auth">Create account</button>
+            </form>
+
+            <div class="auth-footer">
+                Already have an account? <a href="#login" onclick="app.showAuthView('login')">Sign in</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN APP SHELL ==================== -->
+    <div id="view-app" class="meterwise-app">
+        
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="sidebar">
+            <div class="brand-header">
+                <div class="brand-icon-sm">
+                    <i class="fa-solid fa-bolt-lightning"></i>
+                </div>
+                <div>
+                    <h2 class="brand-title">Meterwise</h2>
+                    <span class="brand-subtitle">Bill Management</span>
+                </div>
+            </div>
+
+            <ul class="nav-list">
+                <li>
+                    <button class="nav-link active" data-view="dashboard">
+                        <i class="fa-solid fa-table-cells-large"></i>
+                        <span>Dashboard</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-link" data-view="bills">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        <span>Bills</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-link" data-view="calendar">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        <span>Calendar</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-link" data-view="payments">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>Payment History</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-link" data-view="profile">
+                        <i class="fa-solid fa-user"></i>
+                        <span>Profile</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-link" data-view="settings">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>Settings</span>
+                    </button>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- MAIN VIEW WRAPPER -->
+        <main class="main-wrapper">
+            
+            <!-- TOP BAR -->
+            <header class="top-bar">
+                <h1 class="page-title" id="page-title-heading">Dashboard</h1>
+
+                <div class="top-bar-right">
+                    <button class="top-icon-btn" id="btn-toggle-theme" title="Toggle Theme">
+                        <i class="fa-regular fa-moon"></i>
+                    </button>
+                    <button class="top-icon-btn" title="Notifications" onclick="app.switchView('dashboard')">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="notif-badge-dot" id="top-notif-badge">4</span>
+                    </button>
+
+                    <div class="user-profile-badge">
+                        <div class="avatar-circle" id="top-bar-avatar">D</div>
+                        <span id="top-bar-user-name">Demo User</span>
+                    </div>
+
+                    <button class="top-icon-btn" title="Logout" onclick="app.logout()">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- SECTION 1: DASHBOARD -->
+            <section id="section-dashboard" class="app-section">
+                <!-- Welcome Banner -->
+                <div class="welcome-banner">
+                    <h2 id="dash-user-greeting">Welcome back, Demo</h2>
+                    <p>Here's an overview of all your utility bills.</p>
+                </div>
+
+                <!-- KPI METRIC CARDS -->
+                <div class="metrics-row">
+                    <div class="metric-card">
+                        <div class="metric-icon-box box-total">
+                            <i class="fa-solid fa-file-invoice"></i>
+                        </div>
+                        <div class="metric-content">
+                            <span class="metric-label">TOTAL BILLS</span>
+                            <span class="metric-value" id="kpi-total-bills">20</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon-box box-paid">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div class="metric-content">
+                            <span class="metric-label">PAID BILLS</span>
+                            <span class="metric-value" id="kpi-paid-bills">14</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon-box box-pending">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                        <div class="metric-content">
+                            <span class="metric-label">PENDING BILLS</span>
+                            <span class="metric-value" id="kpi-pending-bills">2</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon-box box-overdue">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div class="metric-content">
+                            <span class="metric-label">OVERDUE BILLS</span>
+                            <span class="metric-value" id="kpi-overdue-bills">4</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon-box box-expense">
+                            <i class="fa-solid fa-indian-rupee-sign"></i>
+                        </div>
+                        <div class="metric-content">
+                            <span class="metric-label">MONTHLY EXPENSE</span>
+                            <span class="metric-value" id="kpi-monthly-expense">₹4,809.25</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHARTS GRID -->
+                <div class="charts-grid">
+                    <!-- Left: Monthly Expense Bar Chart -->
+                    <div class="chart-card">
+                        <div class="chart-card-header">
+                            <h3>Monthly Expense (last 6 months)</h3>
+                        </div>
+                        <div class="chart-container-sm">
+                            <canvas id="chart-monthly-expense"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Right: Category-wise Expense Donut Chart -->
+                    <div class="chart-card">
+                        <div class="chart-card-header">
+                            <h3>Category-wise Expense</h3>
+                        </div>
+                        <div class="chart-container-sm">
+                            <canvas id="chart-category-expense"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: BILLS DIRECTORY (EXACT MATCHING SCREENSHOTS 1 & 2) -->
+            <section id="section-bills" class="app-section" style="display: none;">
+                <div class="bills-page-header">
+                    <div>
+                        <h2 class="bills-section-title">Your Bills</h2>
+                        <p class="bills-section-subtitle">Add, search, filter and manage every utility bill.</p>
+                    </div>
+                    <button class="btn-primary-sm btn-lg-indigo" id="btn-open-add-bill">
+                        <i class="fa-solid fa-plus"></i> Add bill
+                    </button>
+                </div>
+
+                <div class="card-table-panel margin-top-md">
+                    <!-- Filter Controls Row Matching Screenshot 1 -->
+                    <div class="bills-filter-row">
+                        <div class="filter-item flex-grow-2">
+                            <label>Search</label>
+                            <div class="search-input-box">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="search-bills-input" placeholder="Provider, account number, notes..." oninput="app.loadBillsSection()">
+                            </div>
+                        </div>
+
+                        <div class="filter-item">
+                            <label>Utility type</label>
+                            <select id="filter-bill-category" class="auth-input filter-select" onchange="app.loadBillsSection()">
+                                <option value="All">All types</option>
+                                <option value="Electricity">Electricity</option>
+                                <option value="Water">Water</option>
+                                <option value="Gas">Gas</option>
+                                <option value="Internet">Internet</option>
+                                <option value="Cable TV">Cable TV</option>
+                                <option value="Mobile">Mobile</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-item">
+                            <label>Status</label>
+                            <select id="filter-bill-status" class="auth-input filter-select" onchange="app.loadBillsSection()">
+                                <option value="All">All statuses</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Overdue">Overdue</option>
+                                <option value="Paid">Paid</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-item">
+                            <label>Sort by</label>
+                            <div style="display: flex; gap: 6px;">
+                                <select id="filter-bill-sort" class="auth-input filter-select" onchange="app.loadBillsSection()">
+                                    <option value="due_date">Due date</option>
+                                    <option value="amount">Amount</option>
+                                    <option value="provider">Provider</option>
+                                </select>
+                                <button class="btn-outline-sm icon-sort-btn" id="btn-toggle-sort" onclick="app.toggleSortDirection()" title="Sort Direction">
+                                    <i class="fa-solid fa-arrow-down-up-across-line"></i> <span id="sort-dir-text">Ascending</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bills Table Matching Screenshot 1 -->
+                    <table class="meterwise-table">
+                        <thead>
+                            <tr>
+                                <th>UTILITY</th>
+                                <th>PROVIDER</th>
+                                <th>ACCOUNT #</th>
+                                <th>AMOUNT</th>
+                                <th>DUE DATE</th>
+                                <th>STATUS</th>
+                                <th>ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bills-table-body">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SECTION 3: CALENDAR VIEW -->
+            <section id="section-calendar" class="app-section" style="display: none;">
+                <div class="calendar-card">
+                    <div class="table-controls">
+                        <h2 id="calendar-month-year" style="font-size: 1.1rem; font-weight: 800;">July 2026</h2>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-outline-sm" onclick="calendarMgr.prevMonth(app.bills); app.loadCalendarSection();">Previous</button>
+                            <button class="btn-outline-sm" onclick="calendarMgr.nextMonth(app.bills); app.loadCalendarSection();">Next</button>
+                        </div>
+                    </div>
+                    <div id="calendar-grid-container"></div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: PAYMENT HISTORY -->
+            <section id="section-payments" class="app-section" style="display: none;">
+                <div class="card-table-panel">
+                    <h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 16px;">Settled Utility Payment Receipts</h3>
+                    <table class="meterwise-table">
+                        <thead>
+                            <tr>
+                                <th>UTILITY</th>
+                                <th>CATEGORY</th>
+                                <th>AMOUNT</th>
+                                <th>PAYMENT METHOD</th>
+                                <th>TRANSACTION REF</th>
+                                <th>DATE & TIME</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payments-table-body">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SECTION 5: PROFILE VIEW -->
+            <section id="section-profile" class="app-section" style="display: none;">
+                <div class="card-table-panel" style="max-width: 500px;">
+                    <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 20px;">User Profile</h3>
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div>
+                            <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">FULL NAME</label>
+                            <div id="profile-name" style="font-size: 1.1rem; font-weight: 800;">Demo User</div>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">EMAIL ADDRESS</label>
+                            <div id="profile-email" style="font-size: 0.95rem;">demo@example.com</div>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">PHONE NUMBER</label>
+                            <div id="profile-phone" style="font-size: 0.95rem;">+91 98765 43210</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 6: SETTINGS VIEW -->
+            <section id="section-settings" class="app-section" style="display: none;">
+                <div class="card-table-panel" style="max-width: 600px;">
+                    <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 20px;">Meterwise Preferences</h3>
+                    <form id="form-settings" class="auth-form">
+                        <div>
+                            <label>Default Currency Symbol</label>
+                            <input type="text" id="set-currency" class="auth-input" value="₹">
+                        </div>
+                        <div>
+                            <label>Monthly Budget Target (₹)</label>
+                            <input type="number" id="set-budget" class="auth-input" value="10000">
+                        </div>
+                        <button type="submit" class="btn-primary-sm" style="width: 140px; margin-top: 10px;">Save Settings</button>
+                    </form>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL 1: ADD A NEW BILL (EXACT MATCHING SCREENSHOT 2) -->
+    <div class="modal-overlay" id="modal-add-bill">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3 style="font-size: 1.1rem; font-weight: 800;" id="modal-bill-heading">Add a new bill</h3>
+                <button style="background:none; border:none; font-size:1.4rem; cursor:pointer;" onclick="app.closeAddBillModal()">&times;</button>
+            </div>
+            <form id="form-bill" class="modal-form-grid">
+                <input type="hidden" id="bill-id">
+                
+                <div class="form-group">
+                    <label>Utility type</label>
+                    <select id="bill-category" class="auth-input" required>
+                        <option value="Electricity">Electricity</option>
+                        <option value="Water">Water</option>
+                        <option value="Gas">Gas</option>
+                        <option value="Internet">Internet</option>
+                        <option value="Cable TV">Cable TV</option>
+                        <option value="Mobile">Mobile</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Payment status</label>
+                    <select id="bill-status" class="auth-input" required>
+                        <option value="Pending">Pending</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Overdue">Overdue</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Provider name</label>
+                    <input type="text" id="bill-provider" class="auth-input" placeholder="CityPower Utilities" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Account number</label>
+                    <input type="text" id="bill-account" class="auth-input" placeholder="e.g. EL-10293">
+                </div>
+
+                <div class="form-group">
+                    <label>Bill amount (₹)</label>
+                    <input type="number" step="0.01" id="bill-amount" class="auth-input" placeholder="0.00" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Due date</label>
+                    <input type="date" id="bill-due-date" class="auth-input" required>
+                </div>
+
+                <div class="form-group grid-span-2">
+                    <label>Notes</label>
+                    <textarea id="bill-notes" class="auth-input" rows="3" placeholder="Any additional details about this bill..."></textarea>
+                </div>
+
+                <div class="form-group grid-span-2">
+                    <label>Receipt (Image or PDF)</label>
+                    <input type="file" id="bill-receipt-file" class="auth-input" style="padding: 8px;">
+                </div>
+
+                <div class="modal-footer-row grid-span-2">
+                    <button type="button" class="btn-outline-sm" onclick="app.closeAddBillModal()">Cancel</button>
+                    <button type="submit" class="btn-primary-sm btn-indigo-submit" id="btn-submit-bill">Add bill</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: PAY BILL -->
+    <div class="modal-overlay" id="modal-pay-bill">
+        <div class="modal-card" style="width: 400px;">
+            <div class="modal-header">
+                <h3 style="font-size: 1.1rem; font-weight: 800;">Confirm Payment</h3>
+                <button style="background:none; border:none; font-size:1.4rem; cursor:pointer;" onclick="app.closePayModal()">&times;</button>
+            </div>
+            <form id="form-pay" class="auth-form">
+                <input type="hidden" id="pay-bill-id">
+                <div style="text-align:center; padding:16px; background: var(--bg-input); border-radius: var(--radius-sm);">
+                    <span id="pay-bill-title" style="font-size: 0.9rem; font-weight: 700;">Bill Title</span>
+                    <h2 id="pay-bill-amount" style="font-size: 1.8rem; color: var(--color-paid); margin: 6px 0;">₹0.00</h2>
+                </div>
+
+                <div>
+                    <label>Select Payment Method:</label>
+                    <select id="pay-method" class="auth-input">
+                        <option value="UPI / Direct Bank">UPI / Direct Bank</option>
+                        <option value="Visa Credit Card (****4821)">Visa Credit Card (****4821)</option>
+                        <option value="Net Banking">Net Banking</option>
+                        <option value="Wallet Pay">Wallet Pay</option>
+                    </select>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+                    <button type="button" class="btn-outline-sm" onclick="app.closePayModal()">Cancel</button>
+                    <button type="submit" class="btn-primary-sm" style="background: var(--color-paid);">Confirm Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: VIEW DETAILS -->
+    <div class="modal-overlay" id="modal-view-bill">
+        <div class="modal-card" style="width: 460px;">
+            <div class="modal-header">
+                <h3 style="font-size: 1.1rem; font-weight: 800;"><i class="fa-solid fa-file-invoice"></i> Bill Details</h3>
+                <button style="background:none; border:none; font-size:1.4rem; cursor:pointer;" onclick="document.getElementById('modal-view-bill').classList.remove('show')">&times;</button>
+            </div>
+            <div id="view-bill-content" style="display:flex; flex-direction:column; gap:12px; font-size:0.9rem;">
+                <!-- Dynamic Content -->
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+                <button class="btn-outline-sm" onclick="document.getElementById('modal-view-bill').classList.remove('show')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/calendar.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

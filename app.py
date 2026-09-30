@@ -7,11 +7,13 @@ import csv
 import io
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, Response, session
+from dotenv import load_dotenv
 from database import init_db, get_db_connection, hash_password
 from scheduler import reminder_scheduler
+load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'meterwise-secret-key-2026'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 # Ensure Database is Initialized
 init_db()
